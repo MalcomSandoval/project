@@ -1,0 +1,64 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Card from '../components/Card.svelte';
+---
+
+<DashboardLayout title="Dashboard" currentPage="/dashboard">
+  <div class="space-y-6">
+    <h1 class="text-2xl font-bold text-bavarian-blue">Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <Card title="Ventas Hoy" value="$0.00" icon="💰" color="bavarian-blue" client:load />
+      <Card title="Productos" value="0" icon="📦" color="bavarian-gold" client:load />
+      <Card title="Stock Bajo" value="0" icon="⚠️" color="green" client:load />
+      <Card title="Usuarios" value="1" icon="👥" color="bavarian-blue" client:load />
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Resumen de Ventas</h3>
+        <p class="text-gray-600">Los datos se cargarán desde Supabase...</p>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Productos Más Vendidos</h3>
+        <p class="text-gray-600">Los datos se cargarán desde Supabase...</p>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { productos, ventas } from '../services/supabase.js';
+  
+  // Cargar datos del dashboard
+  const cargarDatos = async () => {
+    try {
+      const [productosResult, ventasResult] = await Promise.all([
+        productos.getAll(),
+        ventas.getAll()
+      ]);
+      
+      // Actualizar las cards con datos reales
+      if (productosResult.data) {
+        document.querySelector('[data-card="productos"]').textContent = productosResult.data.length;
+      }
+      
+      if (ventasResult.data) {
+        const ventasHoy = ventasResult.data.filter(v => 
+          new Date(v.fecha_venta).toDateString() === new Date().toDateString()
+        );
+        const totalHoy = ventasHoy.reduce((sum, v) => sum + parseFloat(v.total), 0);
+        document.querySelector('[data-card="ventas-hoy"]').textContent = `$${totalHoy.toFixed(2)}`;
+      }
+    } catch (error) {
+      console.error('Error cargando datos del dashboard:', error);
+    }
+  };
+  
+  // Cargar datos al cargar la página
+  if (typeof window !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', cargarDatos);
+  }
+</script>
+</DashboardLayout>

@@ -1,0 +1,119 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import ProductForm from '../components/ProductForm.svelte';
+---
+
+<DashboardLayout title="Inventario" currentPage="/inventario">
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-bavarian-blue">Gestión de Inventario</h1>
+      <button 
+        id="nuevo-producto-btn"
+        class="bg-bavarian-blue hover:bg-bavarian-darkBlue text-white px-4 py-2 rounded-lg"
+      >
+        + Nuevo Producto
+      </button>
+    </div>
+    
+    <div id="product-form-container" class="hidden">
+      <ProductForm client:load />
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Lista de Productos</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left">Nombre</th>
+              <th class="px-4 py-2 text-left">Precio</th>
+              <th class="px-4 py-2 text-left">Stock</th>
+              <th class="px-4 py-2 text-left">Categoría</th>
+              <th class="px-4 py-2 text-left">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="productos-list">
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                Cargando productos...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { productos } from '../services/supabase.js';
+  
+  const cargarProductos = async () => {
+    try {
+      const result = await productos.getAll();
+      const tbody = document.getElementById('productos-list');
+      
+      if (result.data && result.data.length > 0) {
+        tbody.innerHTML = result.data.map(producto => `
+          <tr class="border-t">
+            <td class="px-4 py-2">${producto.nombre}</td>
+            <td class="px-4 py-2">$${parseFloat(producto.precio).toFixed(2)}</td>
+            <td class="px-4 py-2 ${producto.stock <= 5 ? 'text-red-600 font-bold' : ''}">${producto.stock}</td>
+            <td class="px-4 py-2">${producto.categoria}</td>
+            <td class="px-4 py-2">
+              <button class="text-bavarian-blue hover:underline mr-2" onclick="editarProducto('${producto.id}')">
+                Editar
+              </button>
+              <button class="text-red-500 hover:underline" onclick="eliminarProducto('${producto.id}')">
+                Eliminar
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } else {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+              No hay productos registrados
+            </td>
+          </tr>
+        `;
+      }
+    } catch (error) {
+      console.error('Error cargando productos:', error);
+    }
+  };
+  
+  const toggleFormulario = () => {
+    const container = document.getElementById('product-form-container');
+    container.classList.toggle('hidden');
+  };
+  
+  const editarProducto = async (id) => {
+    // Implementar edición
+    console.log('Editar producto:', id);
+  };
+  
+  const eliminarProducto = async (id) => {
+    if (confirm('¿Estás seguro de eliminar este producto?')) {
+      try {
+        await productos.delete(id);
+        cargarProductos();
+      } catch (error) {
+        console.error('Error eliminando producto:', error);
+      }
+    }
+  };
+  
+  if (typeof window !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarProductos();
+      document.getElementById('nuevo-producto-btn').addEventListener('click', toggleFormulario);
+    });
+  }
+  
+  // Hacer funciones globales para uso desde HTML
+  window.editarProducto = editarProducto;
+  window.eliminarProducto = eliminarProducto;
+</script>
+</DashboardLayout>

@@ -1,0 +1,89 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Card from '../components/Card.svelte';
+---
+
+<DashboardLayout title="Reportes" currentPage="/reportes">
+  <div class="space-y-6">
+    <h1 class="text-2xl font-bold text-bavarian-blue">Reportes y Analytics</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Card title="Ventas del Mes" value="$0.00" icon="📈" color="bavarian-blue" client:load />
+      <Card title="Ganancia Neta" value="$0.00" icon="💵" color="green" client:load />
+      <Card title="Promedio Diario" value="$0.00" icon="📊" color="bavarian-gold" client:load />
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Ventas por Día</h3>
+        <div id="ventas-por-dia" class="text-gray-600">
+          Cargando datos...
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Top Productos</h3>
+        <div id="top-productos" class="text-gray-600">
+          Cargando datos...
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Métodos de Pago</h3>
+      <div id="metodos-pago" class="text-gray-600">
+        Cargando datos...
+      </div>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { ventas } from '../services/supabase.js';
+  
+  const cargarReportes = async () => {
+    try {
+      const result = await ventas.getReporte();
+      
+      if (result.data) {
+        const data = result.data;
+        
+        // Calcular métricas
+        const totalVentas = data.reduce((sum, v) => sum + parseFloat(v.total), 0);
+        const ventasDelMes = data.filter(v => {
+          const fecha = new Date(v.fecha_venta);
+          const ahora = new Date();
+          return fecha.getMonth() === ahora.getMonth() && fecha.getFullYear() === ahora.getFullYear();
+        });
+        const totalMes = ventasDelMes.reduce((sum, v) => sum + parseFloat(v.total), 0);
+        const promedioDiario = totalMes / 30;
+        
+        // Actualizar cards (simplificado)
+        console.log('Total del mes:', totalMes);
+        console.log('Promedio diario:', promedioDiario);
+        
+        // Análisis por método de pago
+        const metodosPago = {};
+        data.forEach(v => {
+          metodosPago[v.metodo_pago] = (metodosPago[v.metodo_pago] || 0) + parseFloat(v.total);
+        });
+        
+        const metodosContainer = document.getElementById('metodos-pago');
+        metodosContainer.innerHTML = Object.entries(metodosPago)
+          .map(([metodo, total]) => `
+            <div class="flex justify-between items-center py-2">
+              <span class="capitalize">${metodo}</span>
+              <span class="font-semibold">$${total.toFixed(2)}</span>
+            </div>
+          `).join('');
+      }
+    } catch (error) {
+      console.error('Error cargando reportes:', error);
+    }
+  };
+  
+  if (typeof window !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', cargarReportes);
+  }
+</script>
+</DashboardLayout>
