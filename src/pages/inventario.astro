@@ -15,9 +15,9 @@ import ProductForm from '../components/ProductForm.svelte';
       </button>
     </div>
     
-    <div id="product-form-container" class="hidden">
-      <ProductForm client:load />
-    </div>
+<div id="product-form-container" class="hidden">
+  <ProductForm id="product-form" client:load on:saved={() => { cargarProductos(); toggleFormulario(); }} />
+</div>
     
     <div class="bg-white rounded-lg shadow-md p-6">
       <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Lista de Productos</h3>
@@ -89,10 +89,22 @@ import ProductForm from '../components/ProductForm.svelte';
     container.classList.toggle('hidden');
   };
   
-  const editarProducto = async (id) => {
-    // Implementar edición
-    console.log('Editar producto:', id);
-  };
+const editarProducto = async (id) => {
+  try {
+    const { data, error } = await productos.getById(id);
+    if (error) {
+      console.error(error);
+      return;
+    }
+    const form = document.querySelector('#product-form');
+    if (form) {
+      form.__svelte__.producto = data; // inyecta el producto en el componente
+      document.getElementById('product-form-container').classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error('Error cargando producto:', err);
+  }
+};
   
   const eliminarProducto = async (id) => {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
