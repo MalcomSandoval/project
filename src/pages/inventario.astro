@@ -1,6 +1,9 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import ProductForm from '../components/ProductForm.svelte';
+import { productos } from '../services/supabase.js';
+
+let productoSeleccionado = null;
 ---
 
 <DashboardLayout title="Inventario" currentPage="/inventario">
@@ -15,9 +18,9 @@ import ProductForm from '../components/ProductForm.svelte';
       </button>
     </div>
     
-<div id="product-form-container" class="hidden">
-  <ProductForm id="product-form" client:load on:saved={() => { cargarProductos(); toggleFormulario(); }} />
-</div>
+    <div id="product-form-container" class="hidden">
+      <ProductForm id="product-form" client:load on:saved={() => { cargarProductos(); toggleFormulario(); }} />
+    </div>
     
     <div class="bg-white rounded-lg shadow-md p-6">
       <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Lista de Productos</h3>
@@ -47,7 +50,9 @@ import ProductForm from '../components/ProductForm.svelte';
 
 <script>
   import { productos } from '../services/supabase.js';
-  
+
+  let productoSeleccionado = null;
+
   const cargarProductos = async () => {
     try {
       const result = await productos.getAll();
@@ -83,29 +88,29 @@ import ProductForm from '../components/ProductForm.svelte';
       console.error('Error cargando productos:', error);
     }
   };
-  
+
   const toggleFormulario = () => {
     const container = document.getElementById('product-form-container');
     container.classList.toggle('hidden');
   };
-  
-const editarProducto = async (id) => {
-  try {
-    const { data, error } = await productos.getById(id);
-    if (error) {
-      console.error(error);
-      return;
+
+  const editarProducto = async (id) => {
+    try {
+      const { data, error } = await productos.getById(id);
+      if (error) {
+        console.error(error);
+        return;
+      }
+      const form = document.querySelector('#product-form');
+      if (form && form.__svelte__) {
+        form.__svelte__.producto = data;
+        document.getElementById('product-form-container').classList.remove('hidden');
+      }
+    } catch (err) {
+      console.error('Error cargando producto:', err);
     }
-    const form = document.querySelector('#product-form');
-    if (form) {
-      form.__svelte__.producto = data; // inyecta el producto en el componente
-      document.getElementById('product-form-container').classList.remove('hidden');
-    }
-  } catch (err) {
-    console.error('Error cargando producto:', err);
-  }
-};
-  
+  };
+
   const eliminarProducto = async (id) => {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
       try {
@@ -116,16 +121,20 @@ const editarProducto = async (id) => {
       }
     }
   };
-  
+
   if (typeof window !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
       cargarProductos();
-      document.getElementById('nuevo-producto-btn').addEventListener('click', toggleFormulario);
+      document.getElementById('nuevo-producto-btn').addEventListener('click', () => {
+        const form = document.querySelector('#product-form');
+        if (form && form.__svelte__) {
+          form.__svelte__.producto = null; // limpia para nuevo
+        }
+        toggleFormulario();
+      });
     });
   }
-  
-  // Hacer funciones globales para uso desde HTML
+
   window.editarProducto = editarProducto;
   window.eliminarProducto = eliminarProducto;
 </script>
-</DashboardLayout>
