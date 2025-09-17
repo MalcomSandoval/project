@@ -1,64 +1,459 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
-import Card from '../components/Card.svelte';
 ---
 
 <DashboardLayout title="Dashboard" currentPage="/dashboard">
-  <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-bavarian-blue">Dashboard</h1>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card title="Ventas Hoy" value="$0.00" icon="💰" color="bavarian-blue" client:load />
-      <Card title="Productos" value="0" icon="📦" color="bavarian-gold" client:load />
-      <Card title="Stock Bajo" value="0" icon="⚠️" color="green" client:load />
-      <Card title="Usuarios" value="1" icon="👥" color="bavarian-blue" client:load />
+  <div class="space-y-8">
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-bavarian-blue">Dashboard</h1>
+        <p class="text-gray-600 mt-1">Resumen general del negocio</p>
+      </div>
+      <div class="text-right text-sm text-gray-500">
+        <div>Última actualización:</div>
+        <div id="ultima-actualizacion">Cargando...</div>
+      </div>
     </div>
     
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Resumen de Ventas</h3>
-        <p class="text-gray-600">Los datos se cargarán desde Supabase...</p>
+    <!-- Métricas principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-bavarian-blue transform transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wide">Ventas Hoy</h3>
+            <p id="ventas-hoy" class="text-3xl font-bold text-gray-900 mt-2">$0.00</p>
+            <div class="flex items-center mt-2">
+              <span id="cambio-ventas" class="text-sm font-medium text-green-600">+0%</span>
+              <span class="text-xs text-gray-500 ml-1">vs ayer</span>
+            </div>
+          </div>
+          <div class="text-4xl opacity-80">💰</div>
+        </div>
       </div>
       
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <h3 class="text-lg font-semibold text-bavarian-blue mb-4">Productos Más Vendidos</h3>
-        <p class="text-gray-600">Los datos se cargarán desde Supabase...</p>
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-bavarian-gold transform transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wide">Productos</h3>
+            <p id="total-productos" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+            <div class="flex items-center mt-2">
+              <span id="productos-activos" class="text-sm font-medium text-bavarian-blue">0 activos</span>
+            </div>
+          </div>
+          <div class="text-4xl opacity-80">📦</div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500 transform transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wide">Stock Bajo</h3>
+            <p id="stock-bajo" class="text-3xl font-bold text-gray-900 mt-2">0</p>
+            <div class="flex items-center mt-2">
+              <span class="text-sm font-medium text-red-600">Requiere atención</span>
+            </div>
+          </div>
+          <div class="text-4xl opacity-80">⚠️</div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 transform transition-all duration-200 hover:scale-105">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wide">Ventas del Mes</h3>
+            <p id="ventas-mes" class="text-3xl font-bold text-gray-900 mt-2">$0.00</p>
+            <div class="flex items-center mt-2">
+              <span id="transacciones-mes" class="text-sm font-medium text-green-600">0 transacciones</span>
+            </div>
+          </div>
+          <div class="text-4xl opacity-80">📈</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Gráficos y análisis -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Ventas recientes -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold text-bavarian-blue">Ventas Recientes</h3>
+          <a href="/ventas" class="text-bavarian-blue hover:text-bavarian-darkBlue text-sm font-medium">Ver todas →</a>
+        </div>
+        <div id="ventas-recientes" class="space-y-4">
+          <div class="text-center text-gray-500 py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bavarian-blue mx-auto mb-4"></div>
+            Cargando ventas...
+          </div>
+        </div>
+      </div>
+      
+      <!-- Productos más vendidos -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold text-bavarian-blue">Top Productos</h3>
+          <a href="/reportes" class="text-bavarian-blue hover:text-bavarian-darkBlue text-sm font-medium">Ver reportes →</a>
+        </div>
+        <div id="top-productos" class="space-y-4">
+          <div class="text-center text-gray-500 py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bavarian-blue mx-auto mb-4"></div>
+            Cargando productos...
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Análisis por método de pago -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-bavarian-blue mb-6">Métodos de Pago</h3>
+        <div id="metodos-pago" class="space-y-4">
+          <div class="text-center text-gray-500 py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bavarian-blue mx-auto mb-4"></div>
+            Cargando datos...
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-bavarian-blue mb-6">Productos con Stock Bajo</h3>
+        <div id="productos-stock-bajo" class="space-y-3">
+          <div class="text-center text-gray-500 py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bavarian-blue mx-auto mb-4"></div>
+            Cargando productos...
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-bavarian-blue mb-6">Resumen Semanal</h3>
+        <div id="resumen-semanal" class="space-y-4">
+          <div class="text-center text-gray-500 py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-bavarian-blue mx-auto mb-4"></div>
+            Cargando resumen...
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </DashboardLayout>
 
 <script>
-  import { productos, ventas } from '../services/supabase.js';
+  import { productos, ventas, estadisticas } from '../services/supabase.js';
+    
+  let datosCompletos = {
+    productos: [],
+    ventas: [],
+    ventasHoy: [],
+    stockBajo: []
+  };
   
-  // Cargar datos del dashboard
   const cargarDatos = async () => {
     try {
-      const [productosResult, ventasResult] = await Promise.all([
+      const [productosResult, ventasResult, ventasHoyResult, stockBajoResult] = await Promise.all([
         productos.getAll(),
-        ventas.getAll()
+        ventas.getAll(),
+        ventas.getVentasHoy(),
+        productos.getStockBajo()
       ]);
       
-      // Actualizar las cards con datos reales
-      if (productosResult.data) {
-        document.querySelector('[data-card="productos"]').textContent = productosResult.data.length;
-      }
+      datosCompletos = {
+        productos: productosResult.data || [],
+        ventas: ventasResult.data || [],
+        ventasHoy: ventasHoyResult.data || [],
+        stockBajo: stockBajoResult.data || []
+      };
       
-      if (ventasResult.data) {
-        const ventasHoy = ventasResult.data.filter(v => 
-          new Date(v.fecha_venta).toDateString() === new Date().toDateString()
-        );
-        const totalHoy = ventasHoy.reduce((sum, v) => sum + parseFloat(v.total), 0);
-        document.querySelector('[data-card="ventas-hoy"]').textContent = `$${totalHoy.toFixed(2)}`;
-      }
+      actualizarTodosLosDatos();
+      
     } catch (error) {
       console.error('Error cargando datos del dashboard:', error);
+      mostrarError('Error cargando datos del dashboard');
     }
   };
   
-  // Cargar datos al cargar la página
+  const actualizarTodosLosDatos = () => {
+    actualizarMetricasPrincipales();
+    actualizarVentasRecientes();
+    actualizarTopProductos();
+    actualizarMetodosPago();
+    actualizarProductosStockBajo();
+    actualizarResumenSemanal();
+    actualizarUltimaActualizacion();
+  };
+  
+  const actualizarMetricasPrincipales = () => {
+    const { productos: productosData, ventas: ventasData, ventasHoy, stockBajo } = datosCompletos;
+    
+    // Ventas de hoy
+    const totalVentasHoy = ventasHoy.reduce((sum, v) => sum + parseFloat(v.total), 0);
+    document.getElementById('ventas-hoy').textContent = `$${totalVentasHoy.toFixed(2)}`;
+    
+    // Productos
+    document.getElementById('total-productos').textContent = productosData.length;
+    document.getElementById('productos-activos').textContent = `${productosData.filter(p => p.activo).length} activos`;
+    
+    // Stock bajo
+    document.getElementById('stock-bajo').textContent = stockBajo.length;
+    
+    // Ventas del mes
+    const fechaActual = new Date();
+    const ventasDelMes = ventasData.filter(v => {
+      const fechaVenta = new Date(v.fecha_venta);
+      return fechaVenta.getMonth() === fechaActual.getMonth() && 
+             fechaVenta.getFullYear() === fechaActual.getFullYear();
+    });
+    
+    const totalVentasMes = ventasDelMes.reduce((sum, v) => sum + parseFloat(v.total), 0);
+    document.getElementById('ventas-mes').textContent = `$${totalVentasMes.toFixed(2)}`;
+    document.getElementById('transacciones-mes').textContent = `${ventasDelMes.length} transacciones`;
+  };
+  
+  const actualizarVentasRecientes = () => {
+    const { ventas: ventasData } = datosCompletos;
+    const container = document.getElementById('ventas-recientes');
+    
+    const ventasRecientes = ventasData.slice(0, 5);
+    
+    if (ventasRecientes.length === 0) {
+      container.innerHTML = `
+        <div class="text-center text-gray-500 py-8">
+          <div class="text-4xl mb-4">🛒</div>
+          <p>No hay ventas registradas</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = ventasRecientes.map(venta => {
+      const fecha = new Date(venta.fecha_venta);
+      const fechaFormateada = fecha.toLocaleString('es-MX', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      const metodosIconos = {
+        'efectivo': '💵',
+        'tarjeta': '💳',
+        'transferencia': '🏦'
+      };
+      
+      return `
+        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-150">
+          <div class="flex items-center space-x-3">
+            <div class="text-2xl">${metodosIconos[venta.metodo_pago] || '💰'}</div>
+            <div>
+              <div class="font-medium text-gray-900">${fechaFormateada}</div>
+              <div class="text-sm text-gray-600 capitalize">${venta.metodo_pago}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-bavarian-blue">$${parseFloat(venta.total).toFixed(2)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+  
+  const actualizarTopProductos = () => {
+    const { ventas: ventasData } = datosCompletos;
+    const container = document.getElementById('top-productos');
+    
+    // Calcular productos más vendidos
+    const productosVendidos = {};
+    ventasData.forEach(venta => {
+      if (venta.detalles_venta) {
+        venta.detalles_venta.forEach(detalle => {
+          const nombreProducto = detalle.productos?.nombre || 'Producto desconocido';
+          productosVendidos[nombreProducto] = (productosVendidos[nombreProducto] || 0) + detalle.cantidad;
+        });
+      }
+    });
+    
+    const topProductos = Object.entries(productosVendidos)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
+    
+    if (topProductos.length === 0) {
+      container.innerHTML = `
+        <div class="text-center text-gray-500 py-8">
+          <div class="text-4xl mb-4">📦</div>
+          <p>No hay datos de productos vendidos</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = topProductos.map(([nombre, cantidad], index) => `
+      <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-bavarian-blue text-white rounded-full flex items-center justify-center text-sm font-bold">
+            ${index + 1}
+          </div>
+          <div>
+            <div class="font-medium text-gray-900">${nombre}</div>
+            <div class="text-sm text-gray-600">${cantidad} vendidos</div>
+          </div>
+        </div>
+        <div class="text-bavarian-gold font-bold">
+          ${cantidad}
+        </div>
+      </div>
+    `).join('');
+  };
+  
+  const actualizarMetodosPago = () => {
+    const { ventas: ventasData } = datosCompletos;
+    const container = document.getElementById('metodos-pago');
+    
+    const metodosPago = {};
+    let totalVentas = 0;
+    
+    ventasData.forEach(v => {
+      const total = parseFloat(v.total);
+      metodosPago[v.metodo_pago] = (metodosPago[v.metodo_pago] || 0) + total;
+      totalVentas += total;
+    });
+    
+    if (totalVentas === 0) {
+      container.innerHTML = `
+        <div class="text-center text-gray-500 py-8">
+          <div class="text-4xl mb-4">💳</div>
+          <p>No hay datos de métodos de pago</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const metodosIconos = {
+      'efectivo': '💵',
+      'tarjeta': '💳',
+      'transferencia': '🏦'
+    };
+    
+    container.innerHTML = Object.entries(metodosPago)
+      .sort(([,a], [,b]) => b - a)
+      .map(([metodo, total]) => {
+        const porcentaje = ((total / totalVentas) * 100).toFixed(1);
+        return `
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="text-xl">${metodosIconos[metodo] || '💰'}</div>
+              <div>
+                <div class="font-medium capitalize">${metodo}</div>
+                <div class="text-sm text-gray-600">${porcentaje}%</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-bavarian-blue">$${total.toFixed(2)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+  };
+  
+  const actualizarProductosStockBajo = () => {
+    const { stockBajo } = datosCompletos;
+    const container = document.getElementById('productos-stock-bajo');
+    
+    if (stockBajo.length === 0) {
+      container.innerHTML = `
+        <div class="text-center text-gray-500 py-8">
+          <div class="text-4xl mb-4">✅</div>
+          <p class="text-sm">Todos los productos tienen stock suficiente</p>
+        </div>
+      `;
+      return;
+    }
+    
+    container.innerHTML = stockBajo.slice(0, 5).map(producto => `
+      <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+        <div>
+          <div class="font-medium text-gray-900">${producto.nombre}</div>
+          <div class="text-sm text-gray-600">${producto.categoria}</div>
+        </div>
+        <div class="text-right">
+          <div class="font-bold text-red-600">${producto.stock}</div>
+          <div class="text-xs text-red-500">Stock bajo</div>
+        </div>
+      </div>
+    `).join('');
+  };
+  
+  const actualizarResumenSemanal = () => {
+    const { ventas: ventasData } = datosCompletos;
+    const container = document.getElementById('resumen-semanal');
+    
+    // Calcular ventas de los últimos 7 días
+    const hoy = new Date();
+    const hace7Dias = new Date(hoy.getTime() - (7 * 24 * 60 * 60 * 1000));
+    
+    const ventasSemana = ventasData.filter(v => {
+      const fechaVenta = new Date(v.fecha_venta);
+      return fechaVenta >= hace7Dias && fechaVenta <= hoy;
+    });
+    
+    const totalSemana = ventasSemana.reduce((sum, v) => sum + parseFloat(v.total), 0);
+    const promedioSemana = ventasSemana.length > 0 ? totalSemana / 7 : 0;
+    const transaccionesSemana = ventasSemana.length;
+    
+    container.innerHTML = `
+      <div class="space-y-4">
+        <div class="p-4 bg-bavarian-blue bg-opacity-10 rounded-lg">
+          <div class="text-2xl font-bold text-bavarian-blue">$${totalSemana.toFixed(2)}</div>
+          <div class="text-sm text-gray-600">Total últimos 7 días</div>
+        </div>
+        
+        <div class="p-4 bg-bavarian-gold bg-opacity-10 rounded-lg">
+          <div class="text-2xl font-bold text-bavarian-gold">$${promedioSemana.toFixed(2)}</div>
+          <div class="text-sm text-gray-600">Promedio diario</div>
+        </div>
+        
+        <div class="p-4 bg-green-100 rounded-lg">
+          <div class="text-2xl font-bold text-green-600">${transaccionesSemana}</div>
+          <div class="text-sm text-gray-600">Transacciones</div>
+        </div>
+      </div>
+    `;
+  };
+  
+  const actualizarUltimaActualizacion = () => {
+    const ahora = new Date();
+    const horaFormateada = ahora.toLocaleString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    document.getElementById('ultima-actualizacion').textContent = horaFormateada;
+  };
+  
+  const mostrarError = (mensaje) => {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50';
+    errorDiv.innerHTML = `
+      <div class="flex items-center">
+        <span class="text-xl mr-2">❌</span>
+        ${mensaje}
+      </div>
+    `;
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+      if (document.body.contains(errorDiv)) {
+        document.body.removeChild(errorDiv);
+      }
+    }, 4000);
+  };
+  
+  // Inicialización
   if (typeof window !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', cargarDatos);
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarDatos();
+      
+      // Actualizar datos cada 30 segundos
+      setInterval(cargarDatos, 30000);
+    });
   }
 </script>
 </DashboardLayout>

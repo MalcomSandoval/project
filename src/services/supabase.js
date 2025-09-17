@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://nkqkdspbkcmzoytqjpzv.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rcWtkc3Bia2Ntem95dHFqcHp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzQzNDMsImV4cCI6MjA3MzMxMDM0M30.x06I44pe4t082QowK5rW0Fv9L3_fT4djlQbqailOoS0';
 
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Funciones de autenticación
