@@ -3,7 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   
   export let producto = null;
-  export let visible = false;
+  export let visible = true;
   
   const dispatch = createEventDispatcher();
   
@@ -21,7 +21,95 @@
   let success = '';
   
   // Resetear formulario cuando cambia el producto o la visibilidad
-  $: if (visible) {
+  $: if (visible && producto) {
+    formData = {
+      nombre: producto.nombre || '',
+      descripcion: producto.descripcion || '',
+      precio: producto.precio?.toString() || '',
+      stock: producto.stock?.toString() || '',
+      categoria: producto.categoria || 'General',
+      codigo_barras: producto.codigo_barras || ''
+    };
+    error = '';
+    success = '';
+  } else if (visible && !producto) {
+    resetForm();
+    error = '';
+    success = '';
+  }
+  
+  $: if (!visible) {
+    resetForm();
+    error = '';
+    success = '';
+  }
+
+  function resetForm() {
+    formData = {
+      nombre: '',
+      descripcion: '',
+      precio: '',
+      stock: '',
+      categoria: 'General',
+      codigo_barras: ''
+    };
+  }
+
+  async function handleSubmit() {
+    if (!formData.nombre.trim() || !formData.precio) {
+      error = 'Nombre y precio son requeridos';
+      return;
+    }
+    
+    if (parseFloat(formData.precio) <= 0) {
+      error = 'El precio debe ser mayor a 0';
+      return;
+    }
+    
+    loading = true;
+    error = '';
+    success = '';
+    
+    try {
+      let result;
+      const dataToSend = {
+        ...formData,
+        nombre: formData.nombre.trim(),
+        descripcion: formData.descripcion.trim(),
+        precio: parseFloat(formData.precio),
+        stock: parseInt(formData.stock) || 0
+      };
+      
+      if (producto) {
+        result = await productos.update(producto.id, dataToSend);
+        success = 'Producto actualizado exitosamente';
+      } else {
+        result = await productos.create(dataToSend);
+        success = 'Producto creado exitosamente';
+      }
+      
+      if (result.error) {
+        error = result.error.message;
+      } else {
+        setTimeout(() => {
+          dispatch('success');
+          handleCancel();
+        }, 1000);
+      }
+    } catch (err) {
+      error = 'Error al guardar el producto';
+      console.error('Error:', err);
+    }
+    
+    loading = false;
+  }
+  
+  function handleCancel() {
+    resetForm();
+    error = '';
+    success = '';
+    dispatch('cancel');
+  }
     if (producto) {
       formData = {
         nombre: producto.nombre || '',

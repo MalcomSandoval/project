@@ -63,25 +63,46 @@ export const productos = {
   create: async (producto) => {
     const { data, error } = await supabase
       .from('productos')
-      .insert([producto])
-      .select();
+      .insert([{
+        ...producto,
+        precio: parseFloat(producto.precio),
+        stock: parseInt(producto.stock) || 0
+      }])
+      .select()
+      .single();
     return { data, error };
   },
 
   update: async (id, producto) => {
     const { data, error } = await supabase
       .from('productos')
-      .update(producto)
+      .update({
+        ...producto,
+        precio: parseFloat(producto.precio),
+        stock: parseInt(producto.stock) || 0,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
-      .select();
+      .select()
+      .single();
     return { data, error };
   },
 
   delete: async (id) => {
     const { data, error } = await supabase
       .from('productos')
-      .update({ activo: false })
+      .delete()
       .eq('id', id);
+    return { data, error };
+  },
+
+  getStockBajo: async () => {
+    const { data, error } = await supabase
+      .from('productos')
+      .select('*')
+      .eq('activo', true)
+      .lte('stock', 5)
+      .order('stock');
     return { data, error };
   }
 };
@@ -101,44 +122,141 @@ export const ventas = {
       .order('fecha_venta', { ascending: false });
     return { data, error };
   },
+    // ⬇️ AQUI agregas la nueva función
+  delete: async (id) => {
+    try {
+      // 1. Borrar detalles de la venta
+      const { error: detallesError } = await supabase
+        .from('detalles_venta')
+        .delete()
+        .eq('venta_id', id);
+
+      if (detallesError) throw detallesError;
+
+      // 2. Borrar la venta
+      const { error: ventaError } = await supabase
+        .from('ventas')
+        .delete()
+        .eq('id', id);
+
+      if (ventaError) throw ventaError;
+
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  },
+  
+  getVentasHoy: async () => {
+    const hoy = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('ventas')
+      .select('*')
+      .gte('fecha_venta', hoy + 'T00:00:00')
+      .lte('fecha_venta', hoy + 'T23:59:59');
+    return { data, error };
+  },
 
   create: async (venta, detalles) => {
-    // Crear la venta
-    const { data: ventaData, error: ventaError } = await supabase
-      .from('ventas')
-      .insert([venta])
-      .select()
-      .single();
+    try {
+      // Crear la venta
+      const { data: ventaData, error: ventaError } = await supabase
+        .from('ventas')
+        .insert([{
+          ...venta,
+          total: parseFloat(venta.total),
+          fecha_venta: new Date().toISOString()
+        }])
+        .select()
+        .single();
 
-    if (ventaError) return { data: null, error: ventaError };
+      if (ventaError) throw ventaError;
 
-    // Crear los detalles
-    const detallesConVentaId = detalles.map(detalle => ({
-      ...detalle,
-      venta_id: ventaData.id
-    }));
-
-    const { data: detallesData, error: detallesError } = await supabase
-      .from('detalles_venta')
-      .insert(detallesConVentaId);
-
-    if (detallesError) return { data: null, error: detallesError };
-
-    // Actualizar stock de productos
-    for (const detalle of detalles) {
-      await supabase.rpc('decrementar_stock', {
+      // Crear los detalles
+      const detallesConVentaId = detalles.map(detalle => ({
+        venta_id: ventaData.id,
         producto_id: detalle.producto_id,
-        cantidad: detalle.cantidad
-      });
-    }
+        cantidad: parseInt(detalle.cantidad),
+        precio_unitario: parseFloat(detalle.precio_unitario),
+        subtotal: parseFloat(detalle.subtotal)
+      }));
 
-    return { data: ventaData, error: null };
+      const { error: detallesError } = await supabase
+        .from('detalles_venta')
+        .insert(detallesConVentaId);
+
+      if (detallesError) throw detallesError;
+
+      // Actualizar stock de productos
+      for (const detalle of detalles) {
+        const { error: stockError } = await supabase.rpc('decrementar_stock', {
+          producto_id: detalle.producto_id,
+          cantidad: parseInt(detalle.cantidad)
+        });
+        if (stockError) {
+          console.error('Error actualizando stock:', stockError);
+        }
+      }
+
+      return { data: ventaData, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
   },
 
   getReporte: async () => {
     const { data, error } = await supabase
       .from('ventas')
-      .select('total, fecha_venta, metodo_pago');
+      .select(`
+        total, 
+        fecha_venta, 
+        metodo_pago,
+        detalles_venta (
+          cantidad,
+          productos (nombre)
+        )
+      `);
     return { data, error };
+  },
+
+  getVentasPorPeriodo: async (fechaInicio, fechaFin) => {
+    const { data, error } = await supabase
+      .from('ventas')
+      .select('*')
+      .gte('fecha_venta', fechaInicio)
+      .lte('fecha_venta', fechaFin)
+      .order('fecha_venta', { ascending: false });
+    return { data, error };
+  }
+};
+
+// Funciones para estadísticas
+export const estadisticas = {
+  getResumenGeneral: async () => {
+    try {
+      const [ventasResult, productosResult, stockBajoResult, ventasHoyResult] = await Promise.all([
+        ventas.getAll(),
+        productos.getAll(),
+        productos.getStockBajo(),
+        ventas.getVentasHoy()
+      ]);
+
+      const totalVentas = ventasResult.data?.length || 0;
+      const totalProductos = productosResult.data?.length || 0;
+      const stockBajo = stockBajoResult.data?.length || 0;
+      const ventasHoy = ventasHoyResult.data?.reduce((sum, v) => sum + parseFloat(v.total), 0) || 0;
+
+      return {
+        data: {
+          totalVentas,
+          totalProductos,
+          stockBajo,
+          ventasHoy
+        },
+        error: null
+      };
+    } catch (error) {
+      return { data: null, error };
+    }
   }
 };
