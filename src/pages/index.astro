@@ -1,7 +1,257 @@
 ---
-// Redirect to login page
+import Layout from '../layouts/Layout.astro';
 ---
 
-<script>
-  window.location.href = '/login';
-</script>
+<Layout title="Punto Frío Beto - Sistema de Gestión Empresarial">
+  <div class="min-h-screen bg-gradient-to-br from-bavarian-blue via-bavarian-lightBlue to-bavarian-gold">
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-black opacity-20"></div>
+      <div class="relative container mx-auto px-4 py-20 text-center text-white">
+        <div class="max-w-4xl mx-auto">
+          <div class="text-6xl mb-6 animate-bounce">🧊</div>
+          <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            Punto Frío <span class="text-bavarian-gold">Beto</span>
+          </h1>
+          <p class="text-xl md:text-2xl mb-8 opacity-90">
+            Sistema Integral de Gestión Empresarial para Pequeños Comercios
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/login" class="bg-bavarian-gold hover:bg-yellow-500 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg">
+              Iniciar Sesión
+            </a>
+            <a href="#problema" class="border-2 border-white text-white hover:bg-white hover:text-bavarian-blue px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300">
+              Conocer Más
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problemática Section -->
+    <section id="problema" class="py-20 bg-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold text-bavarian-blue mb-6">
+              La Problemática
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+              Los pequeños comercios enfrentan desafíos diarios en la gestión de su negocio
+            </p>
+          </div>
+          
+          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="bg-red-50 p-8 rounded-xl shadow-lg border-l-4 border-red-500 transform hover:scale-105 transition-all duration-300">
+              <div class="text-4xl mb-4">📊</div>
+              <h3 class="text-xl font-bold text-red-700 mb-4">Control Manual</h3>
+              <p class="text-gray-700">
+                Llevar inventarios y ventas en cuadernos o hojas de cálculo genera errores, pérdida de información y falta de control real del negocio.
+              </p>
+            </div>
+            
+            <div class="bg-orange-50 p-8 rounded-xl shadow-lg border-l-4 border-orange-500 transform hover:scale-105 transition-all duration-300">
+              <div class="text-4xl mb-4">💸</div>
+              <h3 class="text-xl font-bold text-orange-700 mb-4">Pérdidas Económicas</h3>
+              <p class="text-gray-700">
+                Sin un control adecuado del stock y las ventas, se generan pérdidas por productos vencidos, faltantes o mal contabilizados.
+              </p>
+            </div>
+            
+            <div class="bg-yellow-50 p-8 rounded-xl shadow-lg border-l-4 border-yellow-500 transform hover:scale-105 transition-all duration-300">
+              <div class="text-4xl mb-4">⏰</div>
+              <h3 class="text-xl font-bold text-yellow-700 mb-4">Tiempo Perdido</h3>
+              <p class="text-gray-700">
+                Horas invertidas en contar productos, calcular ventas manualmente y generar reportes que podrían automatizarse.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Solución Section -->
+    <section class="py-20 bg-bavarian-blue text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">
+              Nuestra Solución
+            </h2>
+            <p class="text-xl opacity-90 max-w-3xl mx-auto">
+              Un sistema integral diseñado específicamente para pequeños comercios como "Punto Frío Beto"
+            </p>
+          </div>
+          
+          <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="text-center p-6 bg-bavarian-lightBlue rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300">
+              <div class="text-4xl mb-4">📦</div>
+              <h3 class="text-xl font-bold mb-3">Inventario Digital</h3>
+              <p class="opacity-90">Control total de productos, stock y categorías en tiempo real</p>
+            </div>
+            
+            <div class="text-center p-6 bg-bavarian-lightBlue rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300">
+              <div class="text-4xl mb-4">🛒</div>
+              <h3 class="text-xl font-bold mb-3">Ventas Inteligentes</h3>
+              <p class="opacity-90">Registro rápido de ventas con actualización automática de inventario</p>
+            </div>
+            
+            <div class="text-center p-6 bg-bavarian-lightBlue rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300">
+              <div class="text-4xl mb-4">📈</div>
+              <h3 class="text-xl font-bold mb-3">Reportes Automáticos</h3>
+              <p class="opacity-90">Análisis de ventas, productos más vendidos y métricas de negocio</p>
+            </div>
+            
+            <div class="text-center p-6 bg-bavarian-lightBlue rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300">
+              <div class="text-4xl mb-4">📱</div>
+              <h3 class="text-xl font-bold mb-3">Acceso Móvil</h3>
+              <p class="opacity-90">Disponible desde cualquier dispositivo con conexión a internet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Misión y Visión Section -->
+    <section class="py-20 bg-gray-50">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          <div class="grid lg:grid-cols-2 gap-12">
+            <!-- Misión -->
+            <div class="bg-white p-10 rounded-xl shadow-lg border-l-4 border-bavarian-blue">
+              <div class="text-5xl mb-6">🎯</div>
+              <h3 class="text-3xl font-bold text-bavarian-blue mb-6">Nuestra Misión</h3>
+              <p class="text-lg text-gray-700 leading-relaxed mb-6">
+                Democratizar la tecnología empresarial para pequeños comercios, proporcionando herramientas digitales 
+                accesibles y fáciles de usar que les permitan competir en igualdad de condiciones con grandes empresas.
+              </p>
+              <div class="space-y-3">
+                <div class="flex items-center">
+                  <span class="text-bavarian-gold mr-3">✓</span>
+                  <span>Simplificar la gestión diaria del negocio</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-bavarian-gold mr-3">✓</span>
+                  <span>Reducir errores y pérdidas económicas</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-bavarian-gold mr-3">✓</span>
+                  <span>Optimizar tiempo y recursos</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Visión -->
+            <div class="bg-white p-10 rounded-xl shadow-lg border-l-4 border-bavarian-gold">
+              <div class="text-5xl mb-6">🚀</div>
+              <h3 class="text-3xl font-bold text-bavarian-gold mb-6">Nuestra Visión</h3>
+              <p class="text-lg text-gray-700 leading-relaxed mb-6">
+                Ser la plataforma líder en soluciones tecnológicas para pequeños comercios en América Latina, 
+                transformando la manera en que los emprendedores gestionan y hacen crecer sus negocios.
+              </p>
+              <div class="space-y-3">
+                <div class="flex items-center">
+                  <span class="text-bavarian-blue mr-3">★</span>
+                  <span>Expandir a más de 10,000 comercios para 2025</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-bavarian-blue mr-3">★</span>
+                  <span>Integrar IA para predicciones de ventas</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-bavarian-blue mr-3">★</span>
+                  <span>Crear un ecosistema completo de herramientas</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Utilidad Section -->
+    <section class="py-20 bg-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold text-bavarian-blue mb-6">
+              ¿Por Qué Punto Frío Beto?
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+              Desarrollado específicamente para las necesidades reales de pequeños comercios mexicanos
+            </p>
+          </div>
+          
+          <div class="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div class="space-y-8">
+                <div class="flex items-start">
+                  <div class="bg-bavarian-blue text-white p-3 rounded-full mr-4 flex-shrink-0">
+                    <span class="text-xl">💰</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xl font-bold text-bavarian-blue mb-2">Ahorro Económico</h4>
+                    <p class="text-gray-700">Reduce pérdidas por mal control de inventario hasta en un 30%</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start">
+                  <div class="bg-bavarian-gold text-white p-3 rounded-full mr-4 flex-shrink-0">
+                    <span class="text-xl">⚡</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xl font-bold text-bavarian-gold mb-2">Eficiencia Operativa</h4>
+                    <p class="text-gray-700">Automatiza tareas repetitivas y ahorra hasta 5 horas semanales</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start">
+                  <div class="bg-green-500 text-white p-3 rounded-full mr-4 flex-shrink-0">
+                    <span class="text-xl">📊</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xl font-bold text-green-600 mb-2">Toma de Decisiones</h4>
+                    <p class="text-gray-700">Reportes en tiempo real para decisiones basadas en datos</p>
+                  </div>
+                </div>
+                
+                <div class="flex items-start">
+                  <div class="bg-purple-500 text-white p-3 rounded-full mr-4 flex-shrink-0">
+                    <span class="text-xl">🔒</span>
+                  </div>
+                  <div>
+                    <h4 class="text-xl font-bold text-purple-600 mb-2">Seguridad de Datos</h4>
+                    <p class="text-gray-700">Información protegida en la nube con respaldos automáticos</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="text-center">
+              <div class="bg-gradient-to-br from-bavarian-blue to-bavarian-gold p-8 rounded-xl text-white shadow-2xl">
+                <div class="text-6xl mb-4">🏪</div>
+                <h3 class="text-2xl font-bold mb-4">Diseñado para ti</h3>
+                <p class="text-lg opacity-90 mb-6">
+                  Creado por emprendedores, para emprendedores. Entendemos tus necesidades porque hemos estado en tu lugar.
+                </p>
+                <div class="bg-white bg-opacity-20 p-4 rounded-lg">
+                  <p class="text-sm italic">
+                    "La tecnología debe servir al negocio, no complicarlo"
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Estadísticas Section -->
+    <section class="py-20 bg-bavarian-blue text-white">
+      <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+          <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold mb-6">
+              Impacto Real
+            </h2>
+            <p class="text-xl opacity
