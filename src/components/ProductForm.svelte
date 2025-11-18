@@ -3,7 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   
   export let producto = null;
-  export let visible = true;
+export let visible = true;
   
   const dispatch = createEventDispatcher();
   
@@ -13,37 +13,36 @@
     precio: '',
     stock: '',
     categoria: 'General',
-    codigo_barras: ''
+    codigo_barras: '',
+    // 🟢 Inicializar precio_compra
+    precio_compra: '' 
   };
-  
-  let loading = false;
+let loading = false;
   let error = '';
   let success = '';
-  
-  // Resetear formulario cuando cambia el producto o la visibilidad
+// Resetear formulario cuando cambia el producto o la visibilidad
   $: if (visible && producto) {
     formData = {
-      nombre: producto.nombre || '',
+      nombre: producto.nombre ||
+'',
       descripcion: producto.descripcion || '',
-      precio: producto.precio?.toString() || '',
+      precio: producto.precio?.toString() ||
+'',
       stock: producto.stock?.toString() || '',
-      categoria: producto.categoria || 'General',
-      codigo_barras: producto.codigo_barras || ''
+      categoria: producto.categoria ||
+'General',
+      codigo_barras: producto.codigo_barras || '',
+      // 🟢 Asignar valor si se está editando
+      precio_compra: producto.precio_compra?.toString() || '' 
     };
     error = '';
     success = '';
-  } else if (visible && !producto) {
+} else if (visible && !producto) {
     resetForm();
     error = '';
     success = '';
-  }
-  
-  $: if (!visible) {
-    resetForm();
-    error = '';
-    success = '';
-  }
-
+}
+// ...
   function resetForm() {
     formData = {
       nombre: '',
@@ -51,9 +50,11 @@
       precio: '',
       stock: '',
       categoria: 'General',
-      codigo_barras: ''
+      codigo_barras: '',
+      // 🟢 Resetear el valor
+      precio_compra: ''
     };
-  }
+}
 
   async function handleSubmit() {
     if (!formData.nombre.trim() || !formData.precio) {
@@ -77,7 +78,9 @@
         nombre: formData.nombre.trim(),
         descripcion: formData.descripcion.trim(),
         precio: parseFloat(formData.precio),
-        stock: parseInt(formData.stock) || 0
+        // 🟢 Incluir y parsear precio_compra
+        precio_compra: parseFloat(formData.precio_compra) || 0,
+        stock: parseInt(formData.stock) ||0
       };
       
       if (producto) {
@@ -124,7 +127,7 @@
     }
     error = '';
     success = '';
-  }
+
   
   function resetForm() {
     formData = {
@@ -257,7 +260,22 @@
               required
             />
           </div>
-          
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Precio de Compra *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              bind:value={formData.precio_compra}
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent"
+              placeholder="0.00"
+              required
+            />
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Stock Inicial
