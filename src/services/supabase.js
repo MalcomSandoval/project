@@ -3,53 +3,41 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://nkqkdspbkcmzoytqjpzv.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rcWtkc3Bia2Ntem95dHFqcHp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3MzQzNDMsImV4cCI6MjA3MzMxMDM0M30.x06I44pe4t082QowK5rW0Fv9L3_fT4djlQbqailOoS0';
 
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Funciones de autenticación
+// ------------------ AUTENTICACIÓN ------------------
 export const auth = {
   signIn: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     return { data, error };
   },
-
   signUp: async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     return { data, error };
   },
-
   signOut: async () => {
     const { error } = await supabase.auth.signOut();
     return { error };
   },
-
   getUser: async () => {
     const { data: { user } } = await supabase.auth.getUser();
     return user;
   },
-
   getSession: async () => {
     const { data: { session } } = await supabase.auth.getSession();
     return session;
   }
 };
 
-// Funciones para productos
+// ------------------ PRODUCTOS ------------------
 export const productos = {
   getAll: async () => {
-    const { data, error } = await supabase
-      .from('productos')
-      .select('*')
-      .eq('activo', true)
-      .order('nombre');
-    return { data, error };
-  },
+  const { data, error } = await supabase
+    .from('productos')
+    .select('*')
+    .order('nombre');
+  return { data, error };
+},
 
   getById: async (id) => {
     const { data, error } = await supabase
@@ -66,7 +54,10 @@ export const productos = {
       .insert([{
         ...producto,
         precio: parseFloat(producto.precio),
-        stock: parseInt(producto.stock) || 0
+        // 🟢 Asegurar que el precio de compra sea numérico
+        precio_compra: parseFloat(producto.precio_compra) || 0,
+        stock: parseInt(producto.stock) || 0,
+        activo: true
       }])
       .select()
       .single();
@@ -79,6 +70,8 @@ export const productos = {
       .update({
         ...producto,
         precio: parseFloat(producto.precio),
+        // 🟢 Asegurar que el precio de compra sea numérico
+        precio_compra: parseFloat(producto.precio_compra) || 0,
         stock: parseInt(producto.stock) || 0,
         updated_at: new Date().toISOString()
       })
@@ -88,26 +81,36 @@ export const productos = {
     return { data, error };
   },
 
-  delete: async (id) => {
-    const { data, error } = await supabase
-      .from('productos')
-      .delete()
-      .eq('id', id);
-    return { data, error };
-  },
+ // 🔴 Desactivar producto
+desactivar: async (id) => {
+  const { data, error } = await supabase
+    .from('productos')
+    .update({ activo: false })
+    .eq('id', id);
+  return { data, error };
+},
+
+// 🟢 Activar producto
+activar: async (id) => {
+  const { data, error } = await supabase
+    .from('productos')
+    .update({ activo: true })
+    .eq('id', id);
+  return { data, error };
+},
+
 
   getStockBajo: async () => {
     const { data, error } = await supabase
       .from('productos')
       .select('*')
-      .eq('activo', true)
       .lte('stock', 5)
       .order('stock');
     return { data, error };
   }
 };
 
-// Funciones para ventas
+// ------------------ VENTAS ------------------
 export const ventas = {
   getAll: async () => {
     const { data, error } = await supabase
@@ -122,23 +125,19 @@ export const ventas = {
       .order('fecha_venta', { ascending: false });
     return { data, error };
   },
-    // ⬇️ AQUI agregas la nueva función
+
   delete: async (id) => {
     try {
-      // 1. Borrar detalles de la venta
       const { error: detallesError } = await supabase
         .from('detalles_venta')
         .delete()
         .eq('venta_id', id);
-
       if (detallesError) throw detallesError;
 
-      // 2. Borrar la venta
       const { error: ventaError } = await supabase
         .from('ventas')
         .delete()
         .eq('id', id);
-
       if (ventaError) throw ventaError;
 
       return { error: null };
@@ -146,7 +145,7 @@ export const ventas = {
       return { error };
     }
   },
-  
+
   getVentasHoy: async () => {
     const hoy = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase
@@ -159,7 +158,6 @@ export const ventas = {
 
   create: async (venta, detalles) => {
     try {
-      // Crear la venta
       const { data: ventaData, error: ventaError } = await supabase
         .from('ventas')
         .insert([{
@@ -169,10 +167,8 @@ export const ventas = {
         }])
         .select()
         .single();
-
       if (ventaError) throw ventaError;
 
-      // Crear los detalles
       const detallesConVentaId = detalles.map(detalle => ({
         venta_id: ventaData.id,
         producto_id: detalle.producto_id,
@@ -184,18 +180,14 @@ export const ventas = {
       const { error: detallesError } = await supabase
         .from('detalles_venta')
         .insert(detallesConVentaId);
-
       if (detallesError) throw detallesError;
 
-      // Actualizar stock de productos
       for (const detalle of detalles) {
         const { error: stockError } = await supabase.rpc('decrementar_stock', {
           producto_id: detalle.producto_id,
           cantidad: parseInt(detalle.cantidad)
         });
-        if (stockError) {
-          console.error('Error actualizando stock:', stockError);
-        }
+        if (stockError) console.error('Error actualizando stock:', stockError);
       }
 
       return { data: ventaData, error: null };
@@ -219,18 +211,18 @@ export const ventas = {
     return { data, error };
   },
 
-  getVentasPorPeriodo: async (fechaInicio, fechaFin) => {
+  getVentasPorPeriodo: async (inicio, fin) => {
     const { data, error } = await supabase
       .from('ventas')
       .select('*')
-      .gte('fecha_venta', fechaInicio)
-      .lte('fecha_venta', fechaFin)
+      .gte('fecha_venta', inicio)
+      .lte('fecha_venta', fin)
       .order('fecha_venta', { ascending: false });
     return { data, error };
   }
 };
 
-// Funciones para estadísticas
+// ------------------ ESTADÍSTICAS ------------------
 export const estadisticas = {
   getResumenGeneral: async () => {
     try {
@@ -247,12 +239,7 @@ export const estadisticas = {
       const ventasHoy = ventasHoyResult.data?.reduce((sum, v) => sum + parseFloat(v.total), 0) || 0;
 
       return {
-        data: {
-          totalVentas,
-          totalProductos,
-          stockBajo,
-          ventasHoy
-        },
+        data: { totalVentas, totalProductos, stockBajo, ventasHoy },
         error: null
       };
     } catch (error) {
