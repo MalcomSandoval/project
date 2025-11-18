@@ -29,7 +29,29 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           <div class="text-3xl">📦</div>
         </div>
       </div>
-      
+
+      <!-- Productos Activos -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium">Productos Activos</h3>
+            <p id="total-activos" class="text-2xl font-bold text-gray-900 mt-1">0</p>
+          </div>
+          <div class="text-3xl">✅</div>
+        </div>
+      </div>
+
+      <!-- Productos Inactivos -->
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium">Productos Inactivos</h3>
+            <p id="total-inactivos" class="text-2xl font-bold text-gray-900 mt-1">0</p>
+          </div>
+          <div class="text-3xl">⛔</div>
+        </div>
+      </div>
+
       <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-bavarian-gold">
         <div class="flex items-center justify-between">
           <div>
@@ -98,6 +120,16 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             <option value="agotado">Sin stock (0)</option>
           </select>
         </div>
+        <div>
+          <select
+            id="filtro-estado"
+            class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent"
+          >
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos</option>
+            <option value="">Todos los estados</option>
+          </select>
+        </div>
       </div>
     </div>
     
@@ -149,7 +181,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const result = await productos.getAll();
       if (result.data) {
         productosData = result.data;
-        productosFiltrados = productosData;
+        // Mostrar solo productos activos por defecto
+        productosFiltrados = productosData.filter(p => p.activo);
         renderizarProductos();
         actualizarEstadisticas();
       } else {
@@ -209,13 +242,22 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
               >
                 ✏️
               </button>
-              <button 
-                onclick="eliminarProducto('${producto.id}', '${producto.nombre}')"
-                class="text-red-500 hover:text-red-700 font-medium transition-colors duration-150"
-                title="Eliminar producto"
-              >
-                🗑️
-              </button>
+              ${producto.activo
+                ? `<button 
+                    onclick="desactivarProducto('${producto.id}', '${producto.nombre}')"
+                    class="text-yellow-600 hover:text-yellow-800 font-medium transition-colors duration-150"
+                    title="Desactivar producto"
+                  >
+                    ⏸️
+                  </button>`
+                : `<button 
+                    onclick="activarProducto('${producto.id}', '${producto.nombre}')"
+                    class="text-green-600 hover:text-green-800 font-medium transition-colors duration-150"
+                    title="Activar producto"
+                  >
+                    ▶️
+                  </button>`
+              }
             </div>
           </td>
         </tr>
@@ -224,78 +266,128 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   };
   
   const actualizarEstadisticas = () => {
-    const totalProductos = productosData.length;
-    const valorInventario = productosData.reduce((sum, p) => sum + (parseFloat(p.precio) * p.stock), 0);
-    const stockBajo = productosData.filter(p => p.stock <= 5).length;
-    const categorias = [...new Set(productosData.map(p => p.categoria))].length;
-    
-    document.getElementById('total-productos').textContent = totalProductos;
-    document.getElementById('valor-inventario').textContent = `$${valorInventario.toFixed(2)}`;
-    document.getElementById('stock-bajo').textContent = stockBajo;
-    document.getElementById('total-categorias').textContent = categorias;
-  };
+  const totalProductos = productosData.length;
+  const totalActivos = productosData.filter(p => p.activo).length;
+  const totalInactivos = productosData.filter(p => !p.activo).length;
+
+  const valorInventario = productosData
+    .filter(p => p.activo) // Solo productos activos cuentan
+    .reduce((sum, p) => sum + (parseFloat(p.precio) * p.stock), 0);
+
+  const stockBajo = productosData.filter(p => p.stock <= 5 && p.activo).length;
+
+  const categorias = [...new Set(productosData.map(p => p.categoria))].length;
+
+  document.getElementById('total-productos').textContent = totalProductos;
+  document.getElementById('total-activos').textContent = totalActivos;
+  document.getElementById('total-inactivos').textContent = totalInactivos;
+  document.getElementById('valor-inventario').textContent = `$${valorInventario.toFixed(2)}`;
+  document.getElementById('stock-bajo').textContent = stockBajo;
+  document.getElementById('total-categorias').textContent = categorias;
+};
+
   
   const filtrarProductos = () => {
-    const busqueda = document.getElementById('buscar-producto').value.toLowerCase();
-    const categoria = document.getElementById('filtro-categoria').value;
-    const stock = document.getElementById('filtro-stock').value;
-    
-    productosFiltrados = productosData.filter(producto => {
-      const matchBusqueda = !busqueda || 
-        producto.nombre.toLowerCase().includes(busqueda) ||
-        (producto.codigo_barras && producto.codigo_barras.includes(busqueda));
-      
-      const matchCategoria = !categoria || producto.categoria === categoria;
-      
-      let matchStock = true;
-      if (stock === 'bajo') matchStock = producto.stock <= 5;
-      else if (stock === 'disponible') matchStock = producto.stock > 0;
-      else if (stock === 'agotado') matchStock = producto.stock === 0;
-      
-      return matchBusqueda && matchCategoria && matchStock;
-    });
-    
-    renderizarProductos();
-  };
+  const busqueda = document.getElementById('buscar-producto').value.toLowerCase();
+  const categoria = document.getElementById('filtro-categoria').value;
+  const stock = document.getElementById('filtro-stock').value;
+  const estado = document.getElementById('filtro-estado').value; // 👈 nuevo filtro
+
+  productosFiltrados = productosData.filter(producto => {
+    const matchBusqueda =
+      !busqueda ||
+      producto.nombre.toLowerCase().includes(busqueda) ||
+      (producto.codigo_barras && producto.codigo_barras.includes(busqueda));
+
+    const matchCategoria = !categoria || producto.categoria === categoria;
+
+    let matchStock = true;
+    if (stock === 'bajo') matchStock = producto.stock <= 5;
+    else if (stock === 'disponible') matchStock = producto.stock > 0;
+    else if (stock === 'agotado') matchStock = producto.stock === 0;
+
+    const matchEstado =
+      !estado ||
+      (estado === 'activo' && producto.activo) ||
+      (estado === 'inactivo' && !producto.activo);
+
+    return matchBusqueda && matchCategoria && matchStock && matchEstado;
+  });
+
+      renderizarProductos();
+    };
   
   const mostrarFormularioNuevo = () => {
     productoEditando = null;
     mostrarFormularioProducto();
   };
   
-  const editarProducto = async (id) => {
+ const editarProducto = async (id) => {
+  try {
+    // Guardar el filtro actual antes de editar
+    const estadoSeleccionado = document.getElementById('filtro-estado').value;
+    window.estadoFiltroActual = estadoSeleccionado;
+
+    const result = await productos.getById(id);
+    if (result.data) {
+      productoEditando = result.data;
+      mostrarFormularioProducto();
+    } else {
+      mostrarError('Error cargando producto para editar');
+    }
+  } catch (error) {
+    console.error('Error cargando producto:', error);
+    mostrarError('Error cargando producto');
+  }
+};
+
+  const desactivarProducto = async (id, nombre) => {
+  if (confirm(`¿Deseas desactivar "${nombre}"?`)) {
     try {
-      const result = await productos.getById(id);
-      if (result.data) {
-        productoEditando = result.data;
-        mostrarFormularioProducto();
+      const result = await productos.desactivar(id);
+      if (result.error) {
+        mostrarError('Error desactivando producto: ' + result.error.message);
       } else {
-        mostrarError('Error cargando producto para editar');
+        mostrarExito('Producto desactivado exitosamente');
+        await cargarProductos();
+
+        // 🔹 Mantener el filtro actual después de desactivar
+        const estadoSeleccionado = document.getElementById('filtro-estado').value;
+        if (estadoSeleccionado === 'activo') filtrarProductos(); // seguimos viendo los activos
+        else if (estadoSeleccionado === 'inactivo') filtrarProductos(); // seguimos viendo inactivos
       }
     } catch (error) {
-      console.error('Error cargando producto:', error);
-      mostrarError('Error cargando producto');
+      console.error('Error desactivando producto:', error);
+      mostrarError('Error desactivando producto');
     }
-  };
-  
-  const eliminarProducto = async (id, nombre) => {
-    if (confirm(`¿Estás seguro de eliminar "${nombre}"?`)) {
-      try {
-        const result = await productos.delete(id);
-        if (result.error) {
-          mostrarError('Error eliminando producto: ' + result.error.message);
-        } else {
-          mostrarExito('Producto eliminado exitosamente');
-          cargarProductos();
-        }
-      } catch (error) {
-        console.error('Error eliminando producto:', error);
-        mostrarError('Error eliminando producto');
+  }
+};
+
+const activarProducto = async (id, nombre) => {
+  if (confirm(`¿Deseas activar "${nombre}"?`)) {
+    try {
+      const result = await productos.activar(id);
+      if (result.error) {
+        mostrarError('Error activando producto: ' + result.error.message);
+      } else {
+        mostrarExito('Producto activado exitosamente');
+        await cargarProductos();
+
+        // 🔹 Si estábamos viendo los inactivos, mantener esa vista
+        const estadoSeleccionado = document.getElementById('filtro-estado').value;
+        if (estadoSeleccionado === 'inactivo') filtrarProductos();
+        else if (estadoSeleccionado === 'activo') filtrarProductos();
       }
+    } catch (error) {
+      console.error('Error activando producto:', error);
+      mostrarError('Error activando producto');
     }
-  };
+  }
+};
+
+
   
-  const mostrarFormularioProducto = () => {
+const mostrarFormularioProducto = () => {
     const container = document.getElementById('product-form-container');
     
     // Crear modal HTML directamente
@@ -309,9 +401,15 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       precio: '',
       stock: '',
       categoria: 'General',
-      codigo_barras: ''
+      codigo_barras: '',
+      // 🟢 Nuevo campo para el precio de compra
+      precio_compra: ''
     };
     
+    // 🟢 LÓGICA DE DESHABILITACIÓN DEL STOCK INICIAL
+    const isDisabled = productoEditando ? 'disabled' : '';
+    const disabledClass = productoEditando ? 'bg-gray-100 cursor-not-allowed' : '';
+
     modal.innerHTML = `
       <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div class="p-6">
@@ -330,17 +428,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                 <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Producto *</label>
                 <input type="text" id="nombre" value="${formData.nombre}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" placeholder="Ej: Coca Cola 600ml" required />
               </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Precio *</label>
-                <input type="number" step="0.01" min="0" id="precio" value="${formData.precio}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" placeholder="0.00" required />
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Stock Inicial</label>
-                <input type="number" min="0" id="stock" value="${formData.stock}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" placeholder="0" />
-              </div>
-              
+
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
                 <select id="categoria" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent">
@@ -354,7 +442,38 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                 </select>
               </div>
               
-              <div class="md:col-span-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Precio *</label>
+                <input type="number" step="0.01" min="0" id="precio" value="${formData.precio}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" placeholder="0.00" required />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Precio de Compra</label>
+                <input type="number" step="0.01" min="0" id="precio_compra" value="${formData.precio_compra || ''}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" placeholder="0.00" />
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Stock Inicial</label>
+                <input 
+                    type="number" 
+                    min="0" 
+                    id="stock" 
+                    value="${formData.stock}" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent ${disabledClass}" 
+                    placeholder="0" 
+                    ${isDisabled} 
+                />
+              </div>
+              
+              ${productoEditando ? `
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Suma Stock</label>
+                <input type="number" id="suma_stock" value="0"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                      focus:ring-2 focus:ring-bavarian-blue focus:border-transparent"
+                  placeholder="Cantidad a sumar" />
+              </div>
+              ` : '<div></div>'} <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Código de Barras</label>
                 <input type="text" id="codigo_barras" value="${formData.codigo_barras || ''}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" placeholder="Opcional" />
               </div>
@@ -388,39 +507,66 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   };
   
   const guardarProducto = async () => {
-    const formData = {
-      nombre: document.getElementById('nombre').value.trim(),
-      descripcion: document.getElementById('descripcion').value.trim(),
-      precio: parseFloat(document.getElementById('precio').value),
-      stock: parseInt(document.getElementById('stock').value) || 0,
-      categoria: document.getElementById('categoria').value,
-      codigo_barras: document.getElementById('codigo_barras').value.trim()
-    };
-    
-    if (!formData.nombre || !formData.precio || formData.precio <= 0) {
-      mostrarMensajeForm('Nombre y precio son requeridos', 'error');
-      return;
+  const stockActual = parseInt(document.getElementById('stock').value) || 0;
+
+  // Si estamos editando, tomar el valor del nuevo campo suma_stock
+  let sumaStock = 0;
+  if (productoEditando) {
+    const inputSuma = document.getElementById('suma_stock');
+    if (inputSuma) {
+      sumaStock = parseInt(inputSuma.value) || 0;
     }
+  }
+
+  const formData = {
+    nombre: document.getElementById('nombre').value.trim(),
+    descripcion: document.getElementById('descripcion').value.trim(),
+    precio: parseFloat(document.getElementById('precio').value),
     
-    try {
-      let result;
-      if (productoEditando) {
-        result = await productos.update(productoEditando.id, formData);
-      } else {
-        result = await productos.create(formData);
-      }
-      
-      if (result.error) {
-        mostrarMensajeForm(result.error.message, 'error');
-      } else {
-        mostrarExito(productoEditando ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente');
-        cerrarModal();
-        cargarProductos();
-      }
-    } catch (error) {
-      mostrarMensajeForm('Error al guardar el producto', 'error');
-    }
+    // 🟢 NUEVO CAMPO: Precio de Compra
+    precio_compra: parseFloat(document.getElementById('precio_compra').value) || 0,
+
+    // 🔥 SUMA DEL STOCK SI ES EDICIÓN
+    stock: productoEditando 
+            ? stockActual + sumaStock 
+            : stockActual,
+
+    categoria: document.getElementById('categoria').value,
+    codigo_barras: document.getElementById('codigo_barras').value.trim()
   };
+
+  if (!formData.nombre || !formData.precio || formData.precio <= 0) {
+    mostrarMensajeForm('Nombre y precio son requeridos', 'error');
+    return;
+  }
+
+  try {
+    let result;
+    if (productoEditando) {
+      result = await productos.update(productoEditando.id, formData);
+    } else {
+      result = await productos.create(formData);
+    }
+
+    if (result.error) {
+      mostrarMensajeForm(result.error.message, 'error');
+    } else {
+      mostrarExito(productoEditando ? 'Producto actualizado exitosamente' : 'Producto creado exitosamente');
+      cerrarModal();
+
+      await cargarProductos();
+
+      if (window.estadoFiltroActual !== undefined) {
+        document.getElementById('filtro-estado').value = window.estadoFiltroActual;
+        filtrarProductos();
+      }
+    }
+  } catch (error) {
+    mostrarMensajeForm('Error al guardar el producto', 'error');
+  }
+};
+
+
   
   const mostrarMensajeForm = (mensaje, tipo) => {
     const container = document.getElementById('form-messages');
@@ -495,12 +641,15 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       document.getElementById('buscar-producto').addEventListener('input', filtrarProductos);
       document.getElementById('filtro-categoria').addEventListener('change', filtrarProductos);
       document.getElementById('filtro-stock').addEventListener('change', filtrarProductos);
+      document.getElementById('filtro-estado').addEventListener('change', filtrarProductos);
+
     });
   }
   
   // Hacer funciones globales
   window.editarProducto = editarProducto;
-  window.eliminarProducto = eliminarProducto;
+  window.desactivarProducto = desactivarProducto;
+  window.activarProducto = activarProducto;
   window.cerrarModal = cerrarModal;
 </script>
 </DashboardLayout>
