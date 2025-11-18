@@ -167,9 +167,12 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         <div class="mb-8">
           <h4 class="font-semibold text-gray-800 mb-4">Agregar Producto</h4>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="md:col-span-2">
-              <input type="text" id="buscar-producto" placeholder="Buscar producto por nombre..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" />
-              <div id="productos-sugerencias" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg hidden"></div>
+            <div class="md:col-span-2 relative">
+              <input type="text" id="buscar-producto" placeholder="Buscar producto por nombre..."
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" />
+              <div id="productos-sugerencias"
+                class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-lg hidden">
+              </div>
             </div>
             <div>
               <input type="number" id="cantidad-producto" min="1" value="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bavarian-blue focus:border-transparent" placeholder="Cantidad" />
@@ -232,10 +235,11 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   let productoSeleccionado = null;
   
   const inicializarEventosVenta = async () => {
-    // Cargar productos disponibles
-    const { productos } = await import('../services/supabase.js');
-    const result = await productos.getAll();
-    productosDisponibles = result.data?.filter(p => p.stock > 0) || [];
+  // Cargar productos disponibles
+  const { productos } = await import('../services/supabase.js');
+  const result = await productos.getAll();
+  productosDisponibles = result.data?.filter(p => p.stock > 0 && p.activo) || [];
+
     
     // Configurar búsqueda de productos
     const buscarInput = document.getElementById('buscar-producto');
