@@ -66,7 +66,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </button>
       </div>
       <div id="venta-form-container" style="display: none;">
-        <!-- El componente VentaForm se cargará aquí -->
+        <!-- El formulario de venta se cargará aquí dinámicamente -->
       </div>
     </div>
     
@@ -235,13 +235,10 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   let productoSeleccionado = null;
   
   const inicializarEventosVenta = async () => {
-  // Cargar productos disponibles
-  const { productos } = await import('../services/supabase.js');
-  const result = await productos.getAll();
-  productosDisponibles = result.data?.filter(p => p.stock > 0 && p.activo) || [];
-
+    const { productos } = await import('../services/supabase.js');
+    const result = await productos.getAll();
+    productosDisponibles = result.data?.filter(p => p.stock > 0 && p.activo) || [];
     
-    // Configurar búsqueda de productos
     const buscarInput = document.getElementById('buscar-producto');
     const sugerenciasDiv = document.getElementById('productos-sugerencias');
     
@@ -444,44 +441,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       container.innerHTML = '';
     }, 5000);
   };
-  
-  const eliminarVenta = async (ventaId) => {
-  if (confirm('¿Estás seguro de eliminar esta venta?')) {
-    try {
-      const { supabase } = await import('../services/supabase.js');
 
-      // 1. Borrar primero los detalles de la venta
-      const { error: detallesError } = await supabase
-        .from('detalles_venta')
-        .delete()
-        .eq('venta_id', ventaId);
-
-      if (detallesError) {
-        mostrarError('Error eliminando detalles de la venta: ' + detallesError.message);
-        return;
-      }
-
-      // 2. Luego borrar la venta
-      const { error: ventaError } = await supabase
-        .from('ventas')
-        .delete()
-        .eq('id', ventaId);
-
-      if (ventaError) {
-        mostrarError('Error eliminando venta: ' + ventaError.message);
-        return;
-      }
-
-      // 3. Si todo salió bien
-      mostrarExito('Venta eliminada exitosamente');
-      await cargarVentas();        // refrescar lista
-      await actualizarEstadisticas(); // refrescar stats
-    } catch (error) {
-      console.error('Error eliminando venta:', error);
-      mostrarError('Error eliminando venta');
-    }
-  }
-};
   const renderizarVentas = () => {
     const tbody = document.getElementById('ventas-list');
     
@@ -544,9 +504,9 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
                 👁️
               </button>
               <button 
-                onclick="eliminarVenta('${venta.id}')"
+                onclick="desactivarVenta('${venta.id}')"
                 class="text-red-500 hover:text-red-700 font-medium transition-colors duration-150"
-                title="Eliminar venta"
+                title="Desactivar venta"
               >
                 🗑️
               </button>
@@ -559,7 +519,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   
   const actualizarEstadisticas = async () => {
     try {
-      // Obtener ventas de hoy
       const ventasHoyResult = await ventas.getVentasHoy();
       const ventasHoy = ventasHoyResult.data || [];
       
@@ -567,7 +526,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const transaccionesHoy = ventasHoy.length;
       const promedioVenta = transaccionesHoy > 0 ? totalVentasHoy / transaccionesHoy : 0;
       
-      // Método de pago más popular
       const metodosPago = {};
       ventasHoy.forEach(v => {
         metodosPago[v.metodo_pago] = (metodosPago[v.metodo_pago] || 0) + 1;
@@ -576,7 +534,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       const metodosOrdenados = Object.entries(metodosPago).sort(([,a], [,b]) => b - a);
       const metodoPopular = metodosOrdenados.length > 0 ? metodosOrdenados[0][0] : '-';
       
-      // Actualizar UI
       document.getElementById('ventas-hoy').textContent = `$${totalVentasHoy.toFixed(2)}`;
       document.getElementById('transacciones-hoy').textContent = transaccionesHoy;
       document.getElementById('promedio-venta').textContent = `$${promedioVenta.toFixed(2)}`;
@@ -668,6 +625,32 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     `;
     
     document.body.appendChild(modal);
+  };
+
+  const desactivarVenta = async (ventaId) => {
+    if (confirm('¿Estás seguro de desactivar esta venta? No aparecerá más en el listado.')) {
+      try {
+        console.log('🔍 Desactivando venta ID:', ventaId);
+        const { ventas } = await import('../services/supabase.js');
+        const { data, error } = await ventas.desactivar(ventaId);
+
+        console.log('📊 Resultado:', { data, error });
+
+        if (error) {
+          console.error('❌ Error desactivando venta:', error);
+          mostrarError('Error al desactivar la venta: ' + error.message);
+          return;
+        }
+
+        console.log('✅ Venta desactivada correctamente');
+        mostrarExito('Venta desactivada exitosamente');
+        await cargarVentas();
+        await actualizarEstadisticas();
+      } catch (error) {
+        console.error('❌ Error en desactivarVenta:', error);
+        mostrarError('Error al desactivar la venta');
+      }
+    }
   };
   
   const mostrarError = (mensaje) => {
@@ -720,269 +703,13 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       setInterval(actualizarEstadisticas, 30000);
     });
   }
-  
-  // Hacer funciones globales
+
+  // ✅ Hacer funciones globales
   window.verDetalleVenta = verDetalleVenta;
-  window.eliminarVenta = eliminarVenta;
+  window.desactivarVenta = desactivarVenta;
   window.seleccionarProducto = seleccionarProducto;
   window.agregarProductoCarrito = agregarProductoCarrito;
   window.actualizarCantidadItem = actualizarCantidadItem;
   window.removerItem = removerItem;
   window.procesarVenta = procesarVenta;
-  </script>
-      <!-- El componente VentaForm se cargará aquí -->
-    </div>
-    
-    </div>
-  </div>
-</DashboardLayout>
-
-<script>
-  import { ventas } from '../services/supabase.js';
-  import VentaForm from '../components/VentaForm.svelte';
-  
-  let ventasData = [];
-  let ventasFiltradas = [];
-  let ventaFormComponent = null;
-  
-  const cargarVentas = async () => {
-    try {
-      const result = await ventas.getAll();
-      if (result.data) {
-        ventasData = result.data;
-        ventasFiltradas = ventasData;
-        renderizarVentas();
-        actualizarEstadisticas();
-      }
-    } catch (error) {
-      console.error('Error cargando ventas:', error);
-      mostrarError('Error cargando ventas');
-    }
-  };
-  
-  const renderizarVentas = () => {
-    const tbody = document.getElementById('ventas-list');
-    
-    if (ventasFiltradas.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" class="px-6 py-12 text-center text-gray-500">
-            <div class="flex flex-col items-center">
-              <div class="text-4xl mb-4">🛒</div>
-              <p class="text-lg font-medium">No hay ventas registradas</p>
-              <p class="text-sm">Las ventas aparecerán aquí una vez que realices la primera</p>
-            </div>
-          </td>
-        </tr>
-      `;
-      return;
-    }
-    
-    tbody.innerHTML = ventasFiltradas.map(venta => {
-      const fecha = new Date(venta.fecha_venta);
-      const fechaFormateada = fecha.toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      
-      const metodosIconos = {
-        'efectivo': '💵',
-        'tarjeta': '💳',
-        'transferencia': '🏦'
-      };
-      
-      const totalProductos = venta.detalles_venta?.reduce((sum, detalle) => sum + detalle.cantidad, 0) || 0;
-      
-      return `
-        <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
-          <td class="px-6 py-4">
-            <div class="text-sm font-medium text-gray-900">${fechaFormateada}</div>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-lg font-bold text-bavarian-blue">$${parseFloat(venta.total).toFixed(2)}</div>
-          </td>
-          <td class="px-6 py-4">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-              ${metodosIconos[venta.metodo_pago] || '💰'} ${venta.metodo_pago}
-            </span>
-          </td>
-          <td class="px-6 py-4">
-            <div class="text-sm text-gray-600">${totalProductos} productos</div>
-          </td>
-          <td class="px-6 py-4 text-center">
-            <button 
-              onclick="verDetalleVenta('${venta.id}')"
-              class="text-bavarian-blue hover:text-bavarian-darkBlue font-medium transition-colors duration-150"
-            >
-              Ver detalles
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  };
-  
-  const actualizarEstadisticas = async () => {
-    try {
-      // Obtener ventas de hoy
-      const ventasHoyResult = await ventas.getVentasHoy();
-      const ventasHoy = ventasHoyResult.data || [];
-      
-      const totalVentasHoy = ventasHoy.reduce((sum, v) => sum + parseFloat(v.total), 0);
-      const transaccionesHoy = ventasHoy.length;
-      const promedioVenta = transaccionesHoy > 0 ? totalVentasHoy / transaccionesHoy : 0;
-      
-      // Método de pago más popular
-      const metodosPago = {};
-      ventasHoy.forEach(v => {
-        metodosPago[v.metodo_pago] = (metodosPago[v.metodo_pago] || 0) + 1;
-      });
-      
-      const metodosOrdenados = Object.entries(metodosPago).sort(([,a], [,b]) => b - a);
-      const metodoPopular = metodosOrdenados.length > 0 ? metodosOrdenados[0][0] : '-';
-      
-      // Actualizar UI
-      document.getElementById('ventas-hoy').textContent = `$${totalVentasHoy.toFixed(2)}`;
-      document.getElementById('transacciones-hoy').textContent = transaccionesHoy;
-      document.getElementById('promedio-venta').textContent = `$${promedioVenta.toFixed(2)}`;
-      document.getElementById('metodo-popular').textContent = metodoPopular;
-      
-    } catch (error) {
-      console.error('Error actualizando estadísticas:', error);
-    }
-  };
-  
-  const filtrarVentas = () => {
-    const metodo = document.getElementById('filtro-metodo').value;
-    const fecha = document.getElementById('filtro-fecha').value;
-    
-    ventasFiltradas = ventasData.filter(venta => {
-      const matchMetodo = !metodo || venta.metodo_pago === metodo;
-      
-      let matchFecha = true;
-      if (fecha) {
-        const fechaVenta = new Date(venta.fecha_venta).toISOString().split('T')[0];
-        matchFecha = fechaVenta === fecha;
-      }
-      
-      return matchMetodo && matchFecha;
-    });
-    
-    renderizarVentas();
-  };
-  
-  const verDetalleVenta = (ventaId) => {
-    const venta = ventasData.find(v => v.id === ventaId);
-    if (!venta) return;
-    
-    const detalles = venta.detalles_venta || [];
-    const detallesHTML = detalles.map(detalle => `
-      <div class="flex justify-between items-center py-2 border-b border-gray-100">
-        <div>
-          <div class="font-medium">${detalle.productos?.nombre || 'Producto'}</div>
-          <div class="text-sm text-gray-600">Cantidad: ${detalle.cantidad}</div>
-        </div>
-        <div class="text-right">
-          <div class="font-medium">$${parseFloat(detalle.subtotal).toFixed(2)}</div>
-          <div class="text-sm text-gray-600">$${parseFloat(detalle.precio_unitario).toFixed(2)} c/u</div>
-        </div>
-      </div>
-    `).join('');
-    
-    const fecha = new Date(venta.fecha_venta).toLocaleString('es-MX');
-    
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
-    modal.innerHTML = `
-      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto">
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold text-bavarian-blue">Detalle de Venta</h3>
-            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
-          </div>
-          
-          <div class="mb-4 p-4 bg-gray-50 rounded-lg">
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span class="text-gray-600">Fecha:</span>
-                <div class="font-medium">${fecha}</div>
-              </div>
-              <div>
-                <span class="text-gray-600">Método:</span>
-                <div class="font-medium capitalize">${venta.metodo_pago}</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="mb-4">
-            <h4 class="font-semibold mb-2">Productos:</h4>
-            <div class="space-y-1">
-              ${detallesHTML}
-            </div>
-          </div>
-          
-          <div class="pt-4 border-t border-gray-200">
-            <div class="flex justify-between items-center text-lg font-bold">
-              <span>Total:</span>
-              <span class="text-bavarian-blue">$${parseFloat(venta.total).toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    document.body.appendChild(modal);
-  };
-  
-  const mostrarError = (mensaje) => {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50';
-    errorDiv.innerHTML = `
-      <div class="flex items-center">
-        <span class="text-xl mr-2">❌</span>
-        ${mensaje}
-      </div>
-    `;
-    document.body.appendChild(errorDiv);
-    
-    setTimeout(() => {
-      if (document.body.contains(errorDiv)) {
-        document.body.removeChild(errorDiv);
-      }
-    }, 4000);
-  };
-  
-  const inicializarVentaForm = () => {
-    const container = document.getElementById('venta-form-container');
-    
-    ventaFormComponent = new VentaForm({
-      target: container
-    });
-    
-    ventaFormComponent.$on('ventaCreada', () => {
-      cargarVentas();
-    });
-  };
-  
-  // Inicialización
-  if (typeof window !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-      cargarVentas();
-      inicializarVentaForm();
-      
-      // Event listeners para filtros
-      document.getElementById('filtro-metodo').addEventListener('change', filtrarVentas);
-      document.getElementById('filtro-fecha').addEventListener('change', filtrarVentas);
-      
-      // Actualizar estadísticas cada 30 segundos
-      setInterval(actualizarEstadisticas, 30000);
-    });
-  }
-  
-  // Hacer funciones globales
-  window.verDetalleVenta = verDetalleVenta;
 </script>
-</DashboardLayout>
