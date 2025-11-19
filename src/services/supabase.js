@@ -110,7 +110,6 @@ activar: async (id) => {
   }
 };
 
-// ------------------ VENTAS ------------------
 export const ventas = {
   getAll: async () => {
     const { data, error } = await supabase
@@ -122,37 +121,81 @@ export const ventas = {
           productos (nombre, precio)
         )
       `)
+      .eq('activa', true)
       .order('fecha_venta', { ascending: false });
+
     return { data, error };
   },
 
-  delete: async (id) => {
+  // 🔴 AQUÍ EMPIEZA EL CAMBIO - REEMPLAZA SOLO ESTA FUNCIÓN
+  desactivar: async (id) => {
+    console.log("==========================================");
+    console.log("🔍 INICIANDO DESACTIVACIÓN");
+    console.log("ID recibido:", id);
+    console.log("Tipo de ID:", typeof id);
+    console.log("==========================================");
+    
     try {
-      const { error: detallesError } = await supabase
-        .from('detalles_venta')
-        .delete()
-        .eq('venta_id', id);
-      if (detallesError) throw detallesError;
-
-      const { error: ventaError } = await supabase
+      // Primero verificamos que la venta existe
+      const { data: ventaActual, error: errorConsulta } = await supabase
         .from('ventas')
-        .delete()
-        .eq('id', id);
-      if (ventaError) throw ventaError;
-
-      return { error: null };
-    } catch (error) {
-      return { error };
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      console.log("📊 Venta actual:", ventaActual);
+      console.log("❓ Error en consulta:", errorConsulta);
+      
+      if (errorConsulta) {
+        console.error("❌ ERROR: No se pudo consultar la venta");
+        return { data: null, error: errorConsulta };
+      }
+      
+      // Ahora intentamos actualizar
+      console.log("🔄 Intentando actualizar activa a FALSE...");
+      
+      const { data, error } = await supabase
+        .from('ventas')
+        .update({ activa: false })
+        .eq('id', id)
+        .select();
+      
+      console.log("==========================================");
+      console.log("📊 RESULTADO DE LA ACTUALIZACIÓN:");
+      console.log("Data devuelta:", data);
+      console.log("Error:", error);
+      console.log("==========================================");
+      
+      if (error) {
+        console.error("❌ ERROR AL ACTUALIZAR:", error);
+        console.error("Código de error:", error.code);
+        console.error("Mensaje:", error.message);
+        console.error("Detalles:", error.details);
+        console.error("Hint:", error.hint);
+      } else {
+        console.log("✅ ACTUALIZACIÓN EXITOSA");
+        console.log("Registros actualizados:", data?.length || 0);
+        if (data && data.length > 0) {
+          console.log("Estado final de activa:", data[0].activa);
+        }
+      }
+      
+      return { data, error };
+    } catch (exception) {
+      console.error("💥 EXCEPCIÓN CAPTURADA:", exception);
+      return { data: null, error: exception };
     }
   },
-
   getVentasHoy: async () => {
     const hoy = new Date().toISOString().split('T')[0];
+
     const { data, error } = await supabase
       .from('ventas')
       .select('*')
       .gte('fecha_venta', hoy + 'T00:00:00')
-      .lte('fecha_venta', hoy + 'T23:59:59');
+      .lte('fecha_venta', hoy + 'T23:59:59')
+      .eq('activa', true);     // ← evita mostrar ventas desactivadas
+
     return { data, error };
   },
 
@@ -163,10 +206,12 @@ export const ventas = {
         .insert([{
           ...venta,
           total: parseFloat(venta.total),
+          activa: true,                    // ← ventas nuevas SIEMPRE activas
           fecha_venta: new Date().toISOString()
         }])
         .select()
         .single();
+
       if (ventaError) throw ventaError;
 
       const detallesConVentaId = detalles.map(detalle => ({
@@ -180,6 +225,7 @@ export const ventas = {
       const { error: detallesError } = await supabase
         .from('detalles_venta')
         .insert(detallesConVentaId);
+
       if (detallesError) throw detallesError;
 
       for (const detalle of detalles) {
@@ -207,7 +253,9 @@ export const ventas = {
           cantidad,
           productos (nombre)
         )
-      `);
+      `)
+      .eq('activa', true);     // ← solo ventas activas en reportes
+
     return { data, error };
   },
 
@@ -217,10 +265,13 @@ export const ventas = {
       .select('*')
       .gte('fecha_venta', inicio)
       .lte('fecha_venta', fin)
+      .eq('activa', true)      // ← igual aquí
       .order('fecha_venta', { ascending: false });
+
     return { data, error };
   }
 };
+
 
 // ------------------ ESTADÍSTICAS ------------------
 export const estadisticas = {
