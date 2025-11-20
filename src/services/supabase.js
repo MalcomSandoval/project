@@ -100,6 +100,30 @@ activar: async (id) => {
 },
 
 
+getInventarioGanancia: async () => {
+    const { data: productos, error } = await supabase
+      .from('productos')
+      .select('precio, precio_compra, stock')
+      .eq('activo', true); // Solo productos activos
+    
+    if (error) {
+      console.error('Error al obtener productos para ganancia de stock:', error);
+      return { data: 0, error };
+    }
+
+    const gananciaTotal = productos.reduce((sum, p) => {
+      const precioVenta = parseFloat(p.precio) || 0;
+      const precioCompra = parseFloat(p.precio_compra) || 0;
+      const stock = parseInt(p.stock) || 0;
+      
+      // Ganancia por unidad * Stock
+      const gananciaUnidad = precioVenta - precioCompra;
+      return sum + (gananciaUnidad * stock);
+    }, 0);
+
+    return { data: gananciaTotal, error: null };
+  },
+
   getStockBajo: async () => {
     const { data, error } = await supabase
       .from('productos')
@@ -274,23 +298,40 @@ export const ventas = {
 
 
 // ------------------ ESTADÍSTICAS ------------------
+// ------------------ ESTADÍSTICAS ------------------
 export const estadisticas = {
   getResumenGeneral: async () => {
     try {
-      const [ventasResult, productosResult, stockBajoResult, ventasHoyResult] = await Promise.all([
+      const [
+        ventasResult, 
+        productosResult, 
+        stockBajoResult, 
+        ventasHoyResult,
+        // 🟢 Incluir el nuevo cálculo
+        gananciaStockResult 
+      ] = await Promise.all([
         ventas.getAll(),
         productos.getAll(),
         productos.getStockBajo(),
-        ventas.getVentasHoy()
+        ventas.getVentasHoy(),
+        productos.getInventarioGanancia() // 🟢 Nueva llamada
       ]);
 
       const totalVentas = ventasResult.data?.length || 0;
       const totalProductos = productosResult.data?.length || 0;
       const stockBajo = stockBajoResult.data?.length || 0;
       const ventasHoy = ventasHoyResult.data?.reduce((sum, v) => sum + parseFloat(v.total), 0) || 0;
+      // 🟢 Nuevo valor
+      const gananciaStockTotal = gananciaStockResult.data || 0; 
 
       return {
-        data: { totalVentas, totalProductos, stockBajo, ventasHoy },
+        data: { 
+          totalVentas, 
+          totalProductos, 
+          stockBajo, 
+          ventasHoy,
+          gananciaStockTotal // 🟢 Exportar el nuevo valor
+        },
         error: null
       };
     } catch (error) {
