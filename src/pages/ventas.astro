@@ -52,7 +52,18 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           <div class="text-3xl">💳</div>
         </div>
       </div>
-    </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-indigo-500">
+       <div class="flex items-center justify-between">
+       <div>
+        <h3 class="text-gray-500 text-sm font-medium">Ventas del Día</h3>
+        <p id="ventas-dia-count" class="text-2xl font-bold text-gray-900 mt-1">0</p>
+      </div>
+      <div class="text-3xl">🍻</div>
+  </div>
+</div>
+
+</div>
     
     <!-- Formulario de nueva venta -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
@@ -538,6 +549,8 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
       document.getElementById('transacciones-hoy').textContent = transaccionesHoy;
       document.getElementById('promedio-venta').textContent = `$${promedioVenta.toFixed(2)}`;
       document.getElementById('metodo-popular').textContent = metodoPopular;
+      document.getElementById('ventas-dia-count').textContent = transaccionesHoy;
+
       
     } catch (error) {
       console.error('Error actualizando estadísticas:', error);
@@ -628,7 +641,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   };
 
   const desactivarVenta = async (ventaId) => {
-    if (confirm('¿Estás seguro de desactivar esta venta? No aparecerá más en el listado.')) {
+    if (confirm('¿Estás seguro de borrar esta venta? No aparecerá más en el listado.')) {
       try {
         console.log('🔍 Desactivando venta ID:', ventaId);
         const { ventas } = await import('../services/supabase.js');
@@ -637,13 +650,13 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         console.log('📊 Resultado:', { data, error });
 
         if (error) {
-          console.error('❌ Error desactivando venta:', error);
-          mostrarError('Error al desactivar la venta: ' + error.message);
-          return;
+          console.error('❌ Error borrando venta:', error);
+          mostrarError('Error al borrar la venta: ' + error.message);
+          return; 
         }
 
-        console.log('✅ Venta desactivada correctamente');
-        mostrarExito('Venta desactivada exitosamente');
+        console.log('✅ Venta borrada exitosamente');
+        mostrarExito('Venta borrada exitosamente');
         await cargarVentas();
         await actualizarEstadisticas();
       } catch (error) {
