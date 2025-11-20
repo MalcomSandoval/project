@@ -52,16 +52,6 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
         </div>
       </div>
 
-      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-bavarian-gold">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-gray-500 text-sm font-medium">Valor Inventario</h3>
-            <p id="valor-inventario" class="text-2xl font-bold text-gray-900 mt-1">$0.00</p>
-          </div>
-          <div class="text-3xl">💰</div>
-        </div>
-      </div>
-      
       <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-500">
         <div class="flex items-center justify-between">
           <div>
@@ -71,7 +61,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
           <div class="text-3xl">⚠️</div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
         <div class="flex items-center justify-between">
           <div>
@@ -79,6 +69,26 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             <p id="total-categorias" class="text-2xl font-bold text-gray-900 mt-1">0</p>
           </div>
           <div class="text-3xl">📋</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-bavarian-gold">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium">Valor Inventario</h3>
+            <p id="valor-inventario" class="text-2xl font-bold text-gray-900 mt-1">$0.00</p>
+          </div>
+          <div class="text-3xl">💰</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-gray-400">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-gray-500 text-sm font-medium">Valor Inactivos</h3>
+            <p id="valor-inactivos" class="text-2xl font-bold text-gray-900 mt-1">$0.00</p>
+          </div>
+          <div class="text-3xl">🗑️</div>
         </div>
       </div>
     </div>
@@ -268,20 +278,30 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   const actualizarEstadisticas = () => {
   const totalProductos = productosData.length;
   const totalActivos = productosData.filter(p => p.activo).length;
-  const totalInactivos = productosData.filter(p => !p.activo).length;
+const totalInactivos = productosData.filter(p => !p.activo).length;
 
+  // Valor del inventario ACTIVO (usando precio_compra)
   const valorInventario = productosData
-    .filter(p => p.activo) // Solo productos activos cuentan
-    .reduce((sum, p) => sum + (parseFloat(p.precio) * p.stock), 0);
-
-  const stockBajo = productosData.filter(p => p.stock <= 5 && p.activo).length;
+    .filter(p => p.activo) // Solo productos activos
+    .reduce((sum, p) => sum + (parseFloat(p.precio_compra || 0) * p.stock), 0);
+  
+  // 🟢 NUEVO: Valor de productos INACTIVOS (usando precio_compra)
+  const valorInactivos = productosData
+    .filter(p => !p.activo) // Solo productos inactivos
+    .reduce((sum, p) => sum + (parseFloat(p.precio_compra || 0) * p.stock), 0);
+  
+const stockBajo = productosData.filter(p => p.stock <= 5 && p.activo).length;
 
   const categorias = [...new Set(productosData.map(p => p.categoria))].length;
 
   document.getElementById('total-productos').textContent = totalProductos;
-  document.getElementById('total-activos').textContent = totalActivos;
+document.getElementById('total-activos').textContent = totalActivos;
   document.getElementById('total-inactivos').textContent = totalInactivos;
   document.getElementById('valor-inventario').textContent = `$${valorInventario.toFixed(2)}`;
+  
+  // 🟢 NUEVO: Mostrar el valor de productos inactivos
+  document.getElementById('valor-inactivos').textContent = `$${valorInactivos.toFixed(2)}`;
+  
   document.getElementById('stock-bajo').textContent = stockBajo;
   document.getElementById('total-categorias').textContent = categorias;
 };
