@@ -43,7 +43,7 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
             <h3 class="text-gray-500 text-sm font-medium">Ganancia Estimada</h3>
             <p id="ganancia-periodo" class="text-3xl font-bold text-gray-900 mt-2">$0.00</p>
             <div class="flex items-center mt-2">
-              <span class="text-sm font-medium text-bavarian-gold">Margen de ganancia total</span>
+              
             </div>
           </div>
           <div class="text-4xl opacity-80">💵</div>
@@ -218,13 +218,17 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
   
   const actualizarMetricasPeriodo = (ventasPeriodo) => {
     const totalVentas = ventasPeriodo.reduce((sum, v) => sum + parseFloat(v.total), 0);
-    const gananciaEstimada = totalVentas * 0.3; // 30% de margen
-    const promedioVenta = ventasPeriodo.length > 0 ? totalVentas / ventasPeriodo.length : 0;
+    
+    // Asumiendo que ya has movido ventas.calcularGanancia a supabase.js:
+    const gananciaEstimada = ventas.calcularGanancia(ventasPeriodo); 
+
+    const promedioVenta = ventasPeriodo.length > 0 ?
+    totalVentas / ventasPeriodo.length : 0;
     
     // Calcular productos vendidos
     let totalProductosVendidos = 0;
-    const productosUnicos = new Set();
-    
+    const productosUnicos = new Set(); // Asegúrate de que esta línea esté bien
+
     ventasPeriodo.forEach(venta => {
       if (venta.detalles_venta) {
         venta.detalles_venta.forEach(detalle => {
@@ -239,9 +243,11 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
     document.getElementById('ganancia-periodo').textContent = `$${gananciaEstimada.toFixed(2)}`;
     document.getElementById('promedio-venta-periodo').textContent = `$${promedioVenta.toFixed(2)}`;
     document.getElementById('total-transacciones').textContent = `${ventasPeriodo.length} transacciones`;
+    
+    // 🟢 Esta era la línea 75 del script y el punto de error
     document.getElementById('productos-vendidos-periodo').textContent = totalProductosVendidos;
     document.getElementById('productos-unicos').textContent = `${productosUnicos.size} únicos`;
-  };
+};
   
   const actualizarVentasPorDia = (ventasPeriodo) => {
     const container = document.getElementById('ventas-por-dia');
