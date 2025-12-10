@@ -142,7 +142,7 @@ export const ventas = {
         *,
         detalles_venta (
           *,
-          productos (nombre, precio)
+          productos (nombre, precio, precio_compra)
         )
       `)
       .eq('activa', true)
@@ -150,6 +150,34 @@ export const ventas = {
 
     return { data, error };
   },
+
+  calcularGanancia: (ventasPeriodo) => {
+    if (!ventasPeriodo || ventasPeriodo.length === 0) {
+        return 0;
+    }
+
+    const gananciaTotal = ventasPeriodo.reduce((sumVenta, venta) => {
+        let gananciaVenta = 0;
+
+        if (venta.detalles_venta) {
+            gananciaVenta = venta.detalles_venta.reduce((sumDetalle, detalle) => {
+                const precioVenta = parseFloat(detalle.precio_unitario) || 0;
+                const cantidad = parseInt(detalle.cantidad) || 0;
+                
+                // 🔴 CAMBIO: Usar el costo histórico de la venta: "Precio De compra"
+                const precioCompraHistorico = parseFloat(detalle["Precio De compra"]) || 0;
+                
+                // Ganancia = (Precio de Venta Registrado - Costo Registrado) * Cantidad
+                const gananciaUnidad = precioVenta - precioCompraHistorico;
+                
+                return sumDetalle + (gananciaUnidad * cantidad);
+            }, 0);
+        }
+        return sumVenta + gananciaVenta;
+    }, 0);
+
+    return gananciaTotal;
+},
 
   // 🔴 AQUÍ EMPIEZA EL CAMBIO - REEMPLAZA SOLO ESTA FUNCIÓN
   desactivar: async (id) => {
@@ -230,7 +258,7 @@ export const ventas = {
         .insert([{
           ...venta,
           total: parseFloat(venta.total),
-          activa: true,                    // ← ventas nuevas SIEMPRE activas
+          activa: true,
           fecha_venta: new Date().toISOString()
         }])
         .select()
@@ -238,12 +266,24 @@ export const ventas = {
 
       if (ventaError) throw ventaError;
 
+      // 🟢 CAMBIO: Antes de insertar detalles, obtener el precio de compra de cada producto.
+      const productosMap = {};
+      const { data: productosInventario } = await productos.getAll();
+      
+      if (productosInventario) {
+          productosInventario.forEach(p => {
+              productosMap[p.id] = parseFloat(p.precio_compra) || 0;
+          });
+      }
+
       const detallesConVentaId = detalles.map(detalle => ({
         venta_id: ventaData.id,
         producto_id: detalle.producto_id,
         cantidad: parseInt(detalle.cantidad),
         precio_unitario: parseFloat(detalle.precio_unitario),
-        subtotal: parseFloat(detalle.subtotal)
+        subtotal: parseFloat(detalle.subtotal),
+        // 🟢 Guardar el precio de compra unitario en el momento de la venta
+        "Precio De compra": productosMap[detalle.producto_id] || 0
       }));
 
       const { error: detallesError } = await supabase
