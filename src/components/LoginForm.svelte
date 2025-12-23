@@ -141,7 +141,8 @@
     </div>
     
     <div class="mt-8 text-center text-xs text-gray-500">
-      Sistema de gestión empresarial
+      Correo: malcomsandoval04@gmail.com
+      contraseña: 1234567890
     </div>
   </div>
 </div>
