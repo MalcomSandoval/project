@@ -141,8 +141,8 @@
     </div>
     
     <div class="mt-8 text-center text-xs text-gray-500">
-      Correo: malcomsandoval04@gmail.com
-      contraseña: 1234567890
+      Correo: david5557h@gmail.com <br>
+      contraseña: 1234567
     </div>
   </div>
 </div>
